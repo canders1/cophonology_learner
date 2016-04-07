@@ -27,20 +27,35 @@ def makeGrid(c):
 			else:
 				row.append(0)
 		grid.append(row)
-	print grid
 	return grid
 
-###############################################################
+#####################################################################################################################
+
+def makeData(d):
+	"""
+	Given a list of n data, build a dictionary of data and a list representing data frequency
+	Data: a dictionary of data : constraint violation pairs
+	Dlist: a list with data points proportional to their frequency
+	"""
+	dlist = []
+	data = {}
+	for i in d:
+		dpoint = i.split()
+		data[dpoint[0]] = dpoint[2:len(dpoint)]
+		for i in range(int(dpoint[1])):
+			dlist.append(dpoint[0])
+	return data, dlist
+
+############################################################################################################
 
 f = open(sys.argv[1], 'r')#read in constraints and data file
 d = []
 c = f.readline() 
 for line in f:
 	d.append(line) #create a list of data points
-print d
 cons = c.split()#create a list of constraints
-makeGrid(cons) #create an initialized grid of pairwise constraint rankings
-
+grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
+data, dlist = makeData(d) #create a dictionary of data and a list representing data frequencies
 
 
 
