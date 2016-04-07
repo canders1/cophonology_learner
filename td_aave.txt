@@ -1,4 +1,3 @@
-4	6
 *CT	MAX	MAX-Pre-V	MAX-Final
 wes_end	29	0	1	1	0
 wes	73	0	1	0	1
