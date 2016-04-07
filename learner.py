@@ -1,6 +1,23 @@
+"""
+This is a computational learner for cophonologies. Given a set of constraints and data, this program seeks to create a
+grammar of ranked constraints with as many pairs of constraints ranked as possible while still correctly predicting the
+frequency of the input data.
+
+It uses the expectation driven learning algorithm proposed in Jarosz 2015 to sample a pair of constraints and attempt
+to update the grammar with a new ranking.
+
+Arguments: a text file of constraints and data 
+"""
 import sys
 
+#############################################################
+
 def makeGrid(c):
+	"""
+	Given a list of n constraints, builds an n-by-n grid of pairwise constraint rankings
+	Self-rankings are set automatically to 2; unranked pairs are set to 0
+	1 indicates that the row constraint dominates the column constraint; -1 indicates the reverse
+	"""
 	grid = []
 	for n in range(len(c)):
 		row = []
@@ -13,15 +30,16 @@ def makeGrid(c):
 	print grid
 	return grid
 
-f = open(sys.argv[1], 'r')
+###############################################################
+
+f = open(sys.argv[1], 'r')#read in constraints and data file
 d = []
 c = f.readline() 
 for line in f:
-	d.append(line)
+	d.append(line) #create a list of data points
 print d
-cons = c.split()
-print cons
-makeGrid(cons)
+cons = c.split()#create a list of constraints
+makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 
 
 
