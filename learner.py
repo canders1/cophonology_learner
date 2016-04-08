@@ -31,31 +31,54 @@ def makeGrid(c):
 
 #####################################################################################################################
 
-def makeData(d):
+def makeData(d,n):
 	"""
-	Given a list of n data, build a dictionary of data and a list representing data frequency
+	Build a dictionary of tableaux
 	Data: a dictionary of data : constraint violation pairs
-	Dlist: a list with data points proportional to their frequency
 	"""
-	dlist = []
 	data = {}
-	for i in d:
-		dpoint = i.split()
-		data[dpoint[0]] = dpoint[2:len(dpoint)]
-		for i in range(int(dpoint[1])):
-			dlist.append(dpoint[0])
-	return data, dlist
+	i = 0
+	
+	while(i<=n):
+		name = d[i]
+		rows = []
+		j = 1
+		print j+i
+		while(len(d[i+j].split())> 1):
+			rows.append(d[i+j])
+			j = j+1
+		data[name] = rows
+		i = i+j
+	return data
 
 ############################################################################################################
 
-f = open(sys.argv[1], 'r')#read in constraints and data file
+def makeFreq(f):
+	"""
+	Create a list representing form frequencies
+	"""
+	freqs = []
+	for i in f:
+		dpoint = i.split()
+		for n in range(int(dpoint[1])):
+			freqs.append(dpoint[0])
+	return freqs
+
+##################################################################################################
+
+tabs = open(sys.argv[1], 'r')#read in constraints and tableaux
+f = open(sys.argv[2],'r')#read in frequency
 d = []
-c = f.readline() 
-for line in f:
+c = tabs.readline()
+n = tabs.readline()
+n = n.split()
+n = int(n[0]) #number of tableaux
+for line in tabs:
 	d.append(line) #create a list of data points
 cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
-data, dlist = makeData(d) #create a dictionary of data and a list representing data frequencies
-
+data = makeData(d, n) #create a dictionary of data
+freqs = makeFreq(f)#create a list representing data frequencies
+print data
 
 
