@@ -1,0 +1,10 @@
+*CT	MAX	MAX-Pre-V	MAX-Final
+west_end
+wes_end	0	1	1	0
+west_end	1	0	0	0
+west
+wes	0	1	0	1
+west	1	0	0	0
+west_side
+wes_side	0	1	0	0
+west_side	1	0	0	0

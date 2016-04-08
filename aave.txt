@@ -1,0 +1,6 @@
+west_end	71
+wes_end	29
+west	27
+wes	73
+west_side	24
+wes_side	76
