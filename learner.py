@@ -95,12 +95,17 @@ def buildGraph(g):
 def sampleGrammar(g):
 	grammar = []
 	n = len(g)
-	roots = g.neighbors("ROOT")
+	roots = ["ROOT"]
 	for i in range(n):
 		random.shuffle(roots)
 		c = roots.pop()
-		roots = roots + g.neighbors(c)
+		childs = g.neighbors(c)
+		g.remove_node(c)
+		for child in childs:
+			if (g.predecessors(child) == []):
+				roots.append(child)
 		grammar.append(c)
+	grammar.remove("ROOT")
 	return grammar
 
 ##################################################################################################
