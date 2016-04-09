@@ -39,13 +39,13 @@ def makeData(d,n):
 	data = {}
 	i = 0
 	offset = 0
-	while(i<n):
-		name = d[offset].strip()
+	while(i<n): #find all tableaux and then stop
+		name = d[offset].strip() #underlying form
 		rows = []
 		m = 1
-		while(len(d[offset+m].split()) > 1):
+		while(len(d[offset+m].split()) > 1): #new candidate row
 			rows.append(d[m+offset].split())
-			if (offset+m+1 == len(d)):
+			if (offset+m+1 == len(d)): #end of list
 				break
 			m=m+1
 		data[name] = rows
@@ -65,6 +65,10 @@ def makeFreq(f):
 		for n in range(int(dpoint[1])):
 			freqs.append(dpoint[0])
 	return freqs
+
+##################################################################################################
+
+def sampleGrammar(grid):
 
 ##################################################################################################
 
