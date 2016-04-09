@@ -38,17 +38,19 @@ def makeData(d,n):
 	"""
 	data = {}
 	i = 0
-	
-	while(i<=n):
-		name = d[i]
+	offset = 0
+	while(i<n):
+		name = d[offset].strip()
 		rows = []
-		j = 1
-		print j+i
-		while(len(d[i+j].split())> 1):
-			rows.append(d[i+j])
-			j = j+1
+		m = 1
+		while(len(d[offset+m].split()) > 1):
+			rows.append(d[m+offset].split())
+			if (offset+m+1 == len(d)):
+				break
+			m=m+1
 		data[name] = rows
-		i = i+j
+		offset = m+offset
+		i=i+1
 	return data
 
 ############################################################################################################
@@ -79,6 +81,5 @@ cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
 freqs = makeFreq(f)#create a list representing data frequencies
-print data
 
 
