@@ -10,6 +10,7 @@ Arguments: a text file of constraints and data
 """
 import sys
 import networkx as nx
+import random
 
 #############################################################
 
@@ -74,26 +75,33 @@ def makeFreq(f):
 def buildGraph(g):
 	root=nx.DiGraph()
 	root.add_node("ROOT")
-	print g
 	for i in range(1,len(g)):
-		added = 0
 		for j in range(1,len(g)):
-			print g[i][j]
 			if (g[i][j]==2):
-				if (added == 0):
-					root.add_edge("ROOT",g[i][0])
 				break
 			else:
 				if (g[i][j]==1):
-					print "bigger"
 					root.add_edge(g[i][0],g[0][j])
 				else:
 					if (g[i][j]==-1):
-						print "smaller"
-						added = 1
 						root.add_edge(g[0][j],g[i][0])
-	print root.edges()
+	for i in range(1,len(g)):
+		if (root.predecessors(g[i][0]) == []):
+			root.add_edge("ROOT",g[i][0])
 	return root
+
+#################################################################################################
+
+def sampleGrammar(g):
+	grammar = []
+	n = len(g)
+	roots = g.neighbors("ROOT")
+	for i in range(n):
+		random.shuffle(roots)
+		c = roots.pop()
+		roots = roots + g.neighbors(c)
+		grammar.append(c)
+	return grammar
 
 ##################################################################################################
 
@@ -115,5 +123,6 @@ grid[3][2] = -1
 grid[4][2] = 1
 grid[4][3] = 1 
 graph = buildGraph(grid)
+grammar = sampleGrammar(graph)
 
 
