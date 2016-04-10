@@ -43,18 +43,16 @@ def makeData(d,n):
 	data = {}
 	i = 0
 	offset = 0
-	while(i<n): #find all tableaux and then stop
-		name = d[offset].strip() #underlying form
-		rows = []
-		m = 1
-		while(len(d[offset+m].split()) > 1): #new candidate row
-			rows.append(d[m+offset].split())
-			if (offset+m+1 == len(d)): #end of list
-				break
-			m=m+1
-		data[name] = rows
-		offset = m+offset
-		i=i+1
+	current = ""
+	for i in range(len(d)): #find all tableaux and then stop
+		line = d[i].split()
+		if (len(line)==1):#you've found a name; start a new entry in dictionary
+			current = line[0]
+			data[current] = []
+		else:#you've found a candidate; update existing entry
+			prev = data[current]
+			prev.append(line)
+			data[current] = prev
 	return data
 
 ############################################################################################################
@@ -119,23 +117,28 @@ def sampleGrammar(g):
 
 ##################################################################################################
 
-def winner(gram, tab):
-	for j in range(len(gram)):
-		if (len(tab)==1):
+def winner(gram, t):
+	"""
+	Determines the winning candidate given a grammar and a tableau
+	Non-deterministically selects a winner from winning candidate list in case of a tie
+	"""
+	tab = t[:]#copy list
+	for j in range(len(gram)):#for each constraint
+		if (len(tab)==1):#if you've narrowed it down to 1 candidate, that's the winner
 			break
 		best = sys.maxint
 		winner = ""
 		losers = []
-		for i in range(len(tab)):
-			score = int(tab[i][gram[j][1]])
-			if (score < best):
+		for i in range(len(tab)):#for each candidate
+			score = int(tab[i][gram[j][1]])#find score
+			if (score < best):#if it's better than the previous winner
 				if (best != sys.maxint):
-					losers.append(winner)
+					losers.append(winner)#add previous winner to the loser list
 				winner = tab[i]
 				best = score
-			if (score > best):
-				losers.append(tab[i])
-		for l in losers:
+			if (score > best):#if it's worse than the winner
+				losers.append(tab[i])#add to the loser list
+		for l in losers:#remove all losers from the candidate list
 			tab.remove(l)
 	return winner
 
@@ -149,7 +152,7 @@ n = tabs.readline()
 n = n.split()
 n = int(n[0]) #number of tableaux
 for line in tabs:
-	d.append(line) #create a list of data points
+	d.append(line.strip()) #create a list of data points
 cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
@@ -160,8 +163,5 @@ grid[4][2] = 1
 grid[4][3] = 1 
 graph = buildGraph(grid)#build a graph representing partial order from the pairwise constraint ranking grid
 grammar = sampleGrammar(graph)#sample a total order from the partial order graph
-win = winner(grammar,data["west"])
-print data
-print grammar
-print win
+win = winner(grammar,data["west_side"])
 
