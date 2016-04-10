@@ -107,6 +107,8 @@ def sampleGrammar(g):
 	grammar = []
 	n = len(g)
 	roots = [("ROOT",-1)]#start at root node, which has no incoming edges
+	print g.nodes()
+	print g.edges()
 	for i in range(n):#add every node once
 		random.shuffle(roots)#Shuffle nodes with no parents
 		c = roots.pop()#Choose one
@@ -182,28 +184,43 @@ def freqDict(n, gl, t, f):
 			fd[w[0]] = old + 1
 	return fd
 
+################################################################################################
+
+def pickUpdate(grid):
+	row = ""
+	col = ""
+	trys = []
+	for i in range(len(grid)):
+		for j in range(len(grid)):
+			if (grid[i][j] == 0):
+				trys.append((i,j))
+	if(len(trys) == 0):
+		print "all done!"
+		return row, col
+	else:
+		trialcon = trys[random.randrange(0,len(trys))]#randomly pick a new constraint to add
+		print trialcon
+		row = trialcon[0]
+		col = trialcon[1]
+	return row, col
+
 ##################################################################################################
 
 def estep(e, n, grid, data, ofreq, freqs):
 	"""
 	Perform the e-step: attempt to add a new ranking and recalculate
 	"""
-	row = ""
-	col = ""
-	trys = []
 	newgrid = grid
 	print grid
 	print "here"
-	for i in range(len(grid)):
-		for j in range(len(grid)):
-			if (grid[i][j] == 0):
-				trys.append((i,j))
-	trialcon = trys[random.randrange(0,len(trys))]#randomly pick a new constraint to add
-	row = trialcon[0]
-	col = trialcon[1]
+	row, col = pickUpdate(grid)
+	if (row == ""):
+		return newgrid
+		print "All done!"
 	bgrid, sgrid, test = bigsmall(row, col, grid)#generate grids with ranking added
 	if (test == True):
 		return newgrid
+		print "Fail"
 	else:
 		blist = genGrammars(n,bgrid)#get list of n grammars sampled from both grids
 		slist = genGrammars(n,sgrid)
@@ -236,7 +253,7 @@ def bigsmall(r,c,g):
 	s_grid = copy.deepcopy(g)
 	biggraph, testb = closure(r,c,b_grid)#Build graph with new ranking of r above c
 	smallgraph, tests = closure(c,r,s_grid)#Build graph with new ranking of c above r
-	test = testb | tests
+	test = testb or tests
 	new_b_grid = tabClosure(r,c,b_grid)
 	new_s_grid = tabClosure(c,r,s_grid)
 	return new_b_grid, new_s_grid, test
@@ -269,6 +286,7 @@ def tabClosure(b,s,t):
 	preds = []
 	succs = []
 	for n in range(len(t)):
+		print t[b][n]
 		if (t[b][n] == 1):
 			preds.append(n)
 		if (t[s][n]==-1):
@@ -281,6 +299,8 @@ def tabClosure(b,s,t):
 		print "updated!"
 		t[suc][b]=-1
 		t[b][suc] =1
+	t[b][s] = 1
+	t[s][b] = -1
 	return t
 
 ##################################################################################################
@@ -330,7 +350,7 @@ grid = makeGrid(cons) #create an initialized grid of pairwise constraint ranking
 data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
 oldgrid = estep(e, trials, grid, data, ofreq, freqs)
-for j in range(100):
+for j in range(50):
 	newgrid = estep(e, trials, oldgrid, data, ofreq, freqs)
 	oldgrid = newgrid
 print oldgrid
