@@ -330,12 +330,10 @@ grid = makeGrid(cons) #create an initialized grid of pairwise constraint ranking
 data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
 oldgrid = estep(e, trials, grid, data, ofreq, freqs)
-print "oldgrid"
-print oldgrid
-for j in range(10):
+for j in range(100):
 	newgrid = estep(e, trials, oldgrid, data, ofreq, freqs)
 	oldgrid = newgrid
-	#print newgrid
+print oldgrid
 
 
 
