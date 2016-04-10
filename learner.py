@@ -160,8 +160,31 @@ def genGrammars(n, grid):
 
 ##################################################################################################
 
+def freqDict(n, gl, t, f):
+	"""
+	Finds the frequencies of output forms over n trials
+	Randomly selects a grammar and (according to frequency) a tableau, then calls winner()
+	Creates a dictionary of frequencies for each output
+	"""
+	fd = {} #dictionary with output form keys and frequency values
+	for i in range(n):
+		gram = gl[random.randrange(0, len(gl))]
+		tab = t[f[random.randrange(0,len(f))]]
+		w = winner(gram, tab)
+		if (w[0] not in fd):
+			fd[w[0]] = 1
+		else:
+			old = fd[w[0]]
+			fd[w[0]] = old + 1
+	return fd
+
+##################################################################################################
+
 tabs = open(sys.argv[1], 'r')#read in constraints and tableaux
-f = open(sys.argv[2],'r')#read in frequency
+f = open(sys.argv[2],'r')#read in test frequency
+freq = open(sys.argv[3], 'r')
+trials = int(sys.argv[4])
+freqs = makeFreq(freq)
 d = []
 c = tabs.readline()
 n = tabs.readline()
@@ -172,13 +195,13 @@ for line in tabs:
 cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
-freqs = makeFreq(f)#create a list representing data frequencies
+ofreq = makeFreq(f)#create a list representing data frequencies
 grid[3][1] = -1
 grid[3][2] = -1
 grid[4][2] = 1
 grid[4][3] = 1 
-glist = genGrammars(10,grid)#get list of n grammars sampled from pairwise constraint ranking grid
-for g in glist:
-	win = winner(g,data["west_side"])
-	print win
+glist = genGrammars(trials,grid)#get list of n grammars sampled from pairwise constraint ranking grid
+fd = freqDict(trials, glist, data, freqs)
+print fd
+
 
