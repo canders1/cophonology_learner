@@ -77,20 +77,20 @@ def buildGraph(g):
 	Builds a directed acyclic graph representing the partial order from the pairwise constraint rankings
 	"""
 	root=nx.DiGraph() #directed acyclic graph
-	root.add_node("ROOT")#add a dummy root node in case not all parts of the graph are connected
+	root.add_node(("ROOT",-1))#add a dummy root node in case not all parts of the graph are connected
 	for i in range(1,len(g)):#iterate through rows
 		for j in range(1,len(g)):#iterate through columns
 			if (g[i][j]==2):#if you've passed the diagonal, go on to the next row
 				break
 			else:
 				if (g[i][j]==1):#bigger
-					root.add_edge(g[i][0],g[0][j])
+					root.add_edge((g[i][0],i),(g[0][j],j))
 				else:
 					if (g[i][j]==-1):#smaller
-						root.add_edge(g[0][j],g[i][0])
+						root.add_edge((g[0][j],j),(g[i][0],i))
 	for i in range(1,len(g)):#if node isn't dominated by any other node, add to root
-		if (root.predecessors(g[i][0]) == []):
-			root.add_edge("ROOT",g[i][0])
+		if (root.predecessors((g[i][0],i)) == []):
+			root.add_edge(("ROOT",-1),(g[i][0],i))
 	return root
 
 #################################################################################################
@@ -104,7 +104,7 @@ def sampleGrammar(g):
 	"""
 	grammar = []
 	n = len(g)
-	roots = ["ROOT"]#start at root node, which has no incoming edges
+	roots = [("ROOT",-1)]#start at root node, which has no incoming edges
 	for i in range(n):#add every node once
 		random.shuffle(roots)#Shuffle nodes with no parents
 		c = roots.pop()#Choose one
@@ -114,8 +114,30 @@ def sampleGrammar(g):
 			if (g.predecessors(child) == []):#if child has no other parent,
 				roots.append(child)#add to list of nodes with no incoming edges
 		grammar.append(c)#add chosen node to grammar
-	grammar.remove("ROOT")#remove dummy constraint from grammar
+	grammar = grammar[1:len(grammar)]#remove dummy constraint from grammar
 	return grammar
+
+##################################################################################################
+
+def winner(gram, tab):
+	for j in range(len(gram)):
+		if (len(tab)==1):
+			break
+		best = sys.maxint
+		winner = ""
+		losers = []
+		for i in range(len(tab)):
+			score = int(tab[i][gram[j][1]])
+			if (score < best):
+				if (best != sys.maxint):
+					losers.append(winner)
+				winner = tab[i]
+				best = score
+			if (score > best):
+				losers.append(tab[i])
+		for l in losers:
+			tab.remove(l)
+	return winner
 
 ##################################################################################################
 
@@ -138,5 +160,8 @@ grid[4][2] = 1
 grid[4][3] = 1 
 graph = buildGraph(grid)#build a graph representing partial order from the pairwise constraint ranking grid
 grammar = sampleGrammar(graph)#sample a total order from the partial order graph
-
+win = winner(grammar,data["west"])
+print data
+print grammar
+print win
 
