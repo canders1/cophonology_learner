@@ -73,19 +73,22 @@ def makeFreq(f):
 ##################################################################################################
 
 def buildGraph(g):
-	root=nx.DiGraph()
-	root.add_node("ROOT")
-	for i in range(1,len(g)):
-		for j in range(1,len(g)):
-			if (g[i][j]==2):
+	"""
+	Builds a directed acyclic graph representing the partial order from the pairwise constraint rankings
+	"""
+	root=nx.DiGraph() #directed acyclic graph
+	root.add_node("ROOT")#add a dummy root node in case not all parts of the graph are connected
+	for i in range(1,len(g)):#iterate through rows
+		for j in range(1,len(g)):#iterate through columns
+			if (g[i][j]==2):#if you've passed the diagonal, go on to the next row
 				break
 			else:
-				if (g[i][j]==1):
+				if (g[i][j]==1):#bigger
 					root.add_edge(g[i][0],g[0][j])
 				else:
-					if (g[i][j]==-1):
+					if (g[i][j]==-1):#smaller
 						root.add_edge(g[0][j],g[i][0])
-	for i in range(1,len(g)):
+	for i in range(1,len(g)):#if node isn't dominated by any other node, add to root
 		if (root.predecessors(g[i][0]) == []):
 			root.add_edge("ROOT",g[i][0])
 	return root
@@ -93,19 +96,25 @@ def buildGraph(g):
 #################################################################################################
 
 def sampleGrammar(g):
+	"""
+	Probabilistically samples a total order from the partial order graph
+	Keeps track of nodes with no incoming edges (possible next constraints)
+	Randomly chooses one, deletes from graph, adds children to accessible node list 
+	if they have no other parents
+	"""
 	grammar = []
 	n = len(g)
-	roots = ["ROOT"]
-	for i in range(n):
-		random.shuffle(roots)
-		c = roots.pop()
-		childs = g.neighbors(c)
-		g.remove_node(c)
-		for child in childs:
-			if (g.predecessors(child) == []):
-				roots.append(child)
-		grammar.append(c)
-	grammar.remove("ROOT")
+	roots = ["ROOT"]#start at root node, which has no incoming edges
+	for i in range(n):#add every node once
+		random.shuffle(roots)#Shuffle nodes with no parents
+		c = roots.pop()#Choose one
+		childs = g.neighbors(c)#Get list of children of chosen node
+		g.remove_node(c)#remove node from graph
+		for child in childs:#iterate through children
+			if (g.predecessors(child) == []):#if child has no other parent,
+				roots.append(child)#add to list of nodes with no incoming edges
+		grammar.append(c)#add chosen node to grammar
+	grammar.remove("ROOT")#remove dummy constraint from grammar
 	return grammar
 
 ##################################################################################################
@@ -127,7 +136,7 @@ grid[3][1] = -1
 grid[3][2] = -1
 grid[4][2] = 1
 grid[4][3] = 1 
-graph = buildGraph(grid)
-grammar = sampleGrammar(graph)
+graph = buildGraph(grid)#build a graph representing partial order from the pairwise constraint ranking grid
+grammar = sampleGrammar(graph)#sample a total order from the partial order graph
 
 
