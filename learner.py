@@ -144,6 +144,22 @@ def winner(gram, t):
 
 ##################################################################################################
 
+def genGrammars(n, grid):
+	"""
+	Returns a list of n numbers of randomly sampled grammars
+	Calls buildGraph to make a graph representing the partial order from the pairwise constraint ranking grid
+	Samples grammars from the partial order n times using sampleGrammar
+	"""
+	graph = buildGraph(grid)#build graph of partial order from the pairwise grid
+	gramlist = []
+	for i in range(n):
+		g = graph.copy()
+		newg = sampleGrammar(g) #sample a total order from the partial order graph
+		gramlist.append(newg)
+	return gramlist
+
+##################################################################################################
+
 tabs = open(sys.argv[1], 'r')#read in constraints and tableaux
 f = open(sys.argv[2],'r')#read in frequency
 d = []
@@ -161,7 +177,8 @@ grid[3][1] = -1
 grid[3][2] = -1
 grid[4][2] = 1
 grid[4][3] = 1 
-graph = buildGraph(grid)#build a graph representing partial order from the pairwise constraint ranking grid
-grammar = sampleGrammar(graph)#sample a total order from the partial order graph
-win = winner(grammar,data["west_side"])
+glist = genGrammars(10,grid)#get list of n grammars sampled from pairwise constraint ranking grid
+for g in glist:
+	win = winner(g,data["west_side"])
+	print win
 
