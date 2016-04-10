@@ -11,6 +11,7 @@ Arguments: a text file of constraints and data
 import sys
 import networkx as nx
 import random
+import copy
 
 #############################################################
 
@@ -103,6 +104,8 @@ def sampleGrammar(g):
 	grammar = []
 	n = len(g)
 	roots = [("ROOT",-1)]#start at root node, which has no incoming edges
+	print g.nodes()
+	print g.edges()
 	for i in range(n):#add every node once
 		random.shuffle(roots)#Shuffle nodes with no parents
 		c = roots.pop()#Choose one
@@ -122,7 +125,7 @@ def winner(gram, t):
 	Determines the winning candidate given a grammar and a tableau
 	Non-deterministically selects a winner from winning candidate list in case of a tie
 	"""
-	tab = t[:]#copy list
+	tab = copy.deepcopy(t)#copy list
 	for j in range(len(gram)):#for each constraint
 		if (len(tab)==1):#if you've narrowed it down to 1 candidate, that's the winner
 			break
@@ -168,10 +171,10 @@ def freqDict(n, gl, t, f):
 	"""
 	fd = {} #dictionary with output form keys and frequency values
 	for i in range(n):
-		gram = gl[random.randrange(0, len(gl))]
-		tab = t[f[random.randrange(0,len(f))]]
-		w = winner(gram, tab)
-		if (w[0] not in fd):
+		gram = gl[random.randrange(0, len(gl))]#randomly select a grammar
+		tab = t[f[random.randrange(0,len(f))]]#randomly select a tableau
+		w = winner(gram, tab)#find winner
+		if (w[0] not in fd):#add/update entry in frequency dictionary
 			fd[w[0]] = 1
 		else:
 			old = fd[w[0]]
@@ -180,11 +183,85 @@ def freqDict(n, gl, t, f):
 
 ##################################################################################################
 
+def estep(e, n, grid, data, ofreq, freqs):
+	"""
+	Perform the e-step: attempt to add a new ranking and recalculate
+	"""
+	row = ""
+	col = ""
+	newgrid = grid
+	for i in range(len(grid)):
+		for j in range(len(grid)):
+			if (grid[i][j] == 0):#this is always going to select the rightmost and bottommost undecided pair
+				row = i
+				col = j
+	big, small = bigsmall(row, col, grid)#generate grids with ranking added
+	blist = genGrammars(n,big)#get list of n grammars sampled from both grids
+	slist = genGrammars(n,small)
+	b_fd = freqDict(n, blist, data, freqs)#get frequency predictions from both grids
+	s_fd = freqDict(n,slist,data,freqs)
+	m_b = match(b_fd, ofreq, n)#get number of matches from both grids
+	m_s = match(s_fd,ofreq,n)
+	#This is where you have to make a choice about what to do next
+	# Currently, I fix the ranking if the gap in matches is greater than e
+	print m_b
+	print m_s
+	if ((m_b-m_s) > e):
+		newgrid = big
+	else:
+		if ((m_s-m_b) > e):
+			newgrid = small
+	return newgrid
+
+#################################################################################################
+
+def bigsmall(r,c,g):
+	"""
+	Generate two new grids with fixed rankings for constraints r and c. 
+	"""
+	b_grid = copy.deepcopy(g)
+	s_grid = copy.deepcopy(g)
+	b_grid[r][c] = 1#Rank r above c
+	b_grid[c][r] = -1
+	s_grid[r][c] = -1#Rank c above r
+	s_grid[c][r] = 1
+	return b_grid, s_grid
+
+##################################################################################################
+
+def match(fd, ofd, n):
+	matches = 0
+	scale = float(n)/float(ofd["TOTAl"])
+	for key in fd:
+		exp = float(ofd[key])*scale
+		act = float(fd[key])
+		m = min(act,exp)
+		matches = matches + m
+	return matches
+
+##################################################################################################
+
+def makefdict(f):
+	"""
+	Creates a dictionary of output frequencies
+	"""
+	freqs = {}
+	total = 0
+	for i in f:
+		dpoint = i.split()
+		freqs[dpoint[0]] = dpoint[1]
+		total = total + int(dpoint[1])
+	freqs["TOTAl"] = total
+	return freqs
+
+###############################################################################################
+
 tabs = open(sys.argv[1], 'r')#read in constraints and tableaux
-f = open(sys.argv[2],'r')#read in test frequency
-freq = open(sys.argv[3], 'r')
-trials = int(sys.argv[4])
-freqs = makeFreq(freq)
+f = open(sys.argv[2],'r')#read in test frequencies
+freq = open(sys.argv[3], 'r')#read in tableau frequencies
+trials = int(sys.argv[4])#number of samplings
+e = int(sys.argv[5])#size of gap in order to set a new ranking
+freqs = makeFreq(freq)#make a list of tableau frequencies
 d = []
 c = tabs.readline()
 n = tabs.readline()
@@ -195,13 +272,18 @@ for line in tabs:
 cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
-ofreq = makeFreq(f)#create a list representing data frequencies
+ofreq = makefdict(f)#create a list of expected frequencies
 grid[3][1] = -1
 grid[3][2] = -1
 grid[4][2] = 1
 grid[4][3] = 1 
-glist = genGrammars(trials,grid)#get list of n grammars sampled from pairwise constraint ranking grid
-fd = freqDict(trials, glist, data, freqs)
-print fd
+oldgrid = estep(e, trials, grid, data, ofreq, freqs)
+for j in range(10):
+	newgrid = estep(e, trials, oldgrid, data, ofreq, freqs)
+	oldgrid = newgrid
+	print newgrid
+
+
+
 
 
