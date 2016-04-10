@@ -88,8 +88,11 @@ def buildGraph(g):
 					if (g[i][j]==-1):#smaller
 						root.add_edge((g[0][j],j),(g[i][0],i))
 	for i in range(1,len(g)):#if node isn't dominated by any other node, add to root
-		if (root.predecessors((g[i][0],i)) == []):
+		if (root.has_node((g[i][0],i))==False):
 			root.add_edge(("ROOT",-1),(g[i][0],i))
+		else:
+			if (root.predecessors((g[i][0],i)) == []):
+				root.add_edge(("ROOT",-1),(g[i][0],i))
 	return root
 
 #################################################################################################
@@ -104,8 +107,6 @@ def sampleGrammar(g):
 	grammar = []
 	n = len(g)
 	roots = [("ROOT",-1)]#start at root node, which has no incoming edges
-	print g.nodes()
-	print g.edges()
 	for i in range(n):#add every node once
 		random.shuffle(roots)#Shuffle nodes with no parents
 		c = roots.pop()#Choose one
@@ -153,11 +154,11 @@ def genGrammars(n, grid):
 	Calls buildGraph to make a graph representing the partial order from the pairwise constraint ranking grid
 	Samples grammars from the partial order n times using sampleGrammar
 	"""
-	graph = buildGraph(grid)#build graph of partial order from the pairwise grid
 	gramlist = []
+	g = buildGraph(grid)
 	for i in range(n):
-		g = graph.copy()
-		newg = sampleGrammar(g) #sample a total order from the partial order graph
+		gr = g.copy()
+		newg = sampleGrammar(gr) #sample a total order from the partial order graph
 		gramlist.append(newg)
 	return gramlist
 
@@ -189,29 +190,41 @@ def estep(e, n, grid, data, ofreq, freqs):
 	"""
 	row = ""
 	col = ""
+	trys = []
 	newgrid = grid
+	print grid
+	print "here"
 	for i in range(len(grid)):
 		for j in range(len(grid)):
-			if (grid[i][j] == 0):#this is always going to select the rightmost and bottommost undecided pair
-				row = i
-				col = j
-	big, small = bigsmall(row, col, grid)#generate grids with ranking added
-	blist = genGrammars(n,big)#get list of n grammars sampled from both grids
-	slist = genGrammars(n,small)
-	b_fd = freqDict(n, blist, data, freqs)#get frequency predictions from both grids
-	s_fd = freqDict(n,slist,data,freqs)
-	m_b = match(b_fd, ofreq, n)#get number of matches from both grids
-	m_s = match(s_fd,ofreq,n)
-	#This is where you have to make a choice about what to do next
-	# Currently, I fix the ranking if the gap in matches is greater than e
-	print m_b
-	print m_s
-	if ((m_b-m_s) > e):
-		newgrid = big
+			if (grid[i][j] == 0):
+				trys.append((i,j))
+	trialcon = trys[random.randrange(0,len(trys))]#randomly pick a new constraint to add
+	row = trialcon[0]
+	col = trialcon[1]
+	bgrid, sgrid, test = bigsmall(row, col, grid)#generate grids with ranking added
+	if (test == True):
+		return newgrid
 	else:
-		if ((m_s-m_b) > e):
-			newgrid = small
-	return newgrid
+		blist = genGrammars(n,bgrid)#get list of n grammars sampled from both grids
+		slist = genGrammars(n,sgrid)
+		b_fd = freqDict(n, blist, data, freqs)#get frequency predictions from both grids
+		s_fd = freqDict(n,slist,data,freqs)
+		m_b = match(b_fd, ofreq, n)#get number of matches from both grids
+		m_s = match(s_fd,ofreq,n)
+		#This is where you have to make a choice about what to do next
+		# Currently, I fix the ranking if the gap in matches is greater than e
+		print m_b
+		print m_s
+		if ((m_b-m_s) > e):
+			print "update!"
+			newgrid = bgrid
+		else:
+			if ((m_s-m_b) > e):
+				print "update!"
+				newgrid = sgrid
+		print "new"
+		print newgrid
+		return newgrid
 
 #################################################################################################
 
@@ -221,11 +234,54 @@ def bigsmall(r,c,g):
 	"""
 	b_grid = copy.deepcopy(g)
 	s_grid = copy.deepcopy(g)
-	b_grid[r][c] = 1#Rank r above c
-	b_grid[c][r] = -1
-	s_grid[r][c] = -1#Rank c above r
-	s_grid[c][r] = 1
-	return b_grid, s_grid
+	biggraph, testb = closure(r,c,b_grid)#Build graph with new ranking of r above c
+	smallgraph, tests = closure(c,r,s_grid)#Build graph with new ranking of c above r
+	test = testb | tests
+	new_b_grid = tabClosure(r,c,b_grid)
+	new_s_grid = tabClosure(c,r,s_grid)
+	return new_b_grid, new_s_grid, test
+
+##################################################################################################
+
+def closure(b,s,g):
+	"""
+	Attempts to add a new ranking
+	If the ranking conflicts with existing rankings, set fail to true and return
+	"""
+	graph = buildGraph(g)#build graph of partial order from the pairwise grid
+	bignode = (g[b][0],b)
+	smallnode = (g[s][0],s)
+	fail = False
+	preds = graph.predecessors(bignode)
+	succs = graph.successors(smallnode)
+	for i in preds:
+		for j in succs:
+			if (graph.has_edge(j,i)):#conflicting ranking
+				fail = True
+				break
+			else:
+				graph.add_edge(i,j)#transitive closure
+	return graph, fail
+
+#################################################################################################
+
+def tabClosure(b,s,t):
+	preds = []
+	succs = []
+	for n in range(len(t)):
+		if (t[b][n] == 1):
+			preds.append(n)
+		if (t[s][n]==-1):
+			succs.append(n)
+	for pre in preds:
+		print "updated!"
+		t[pre][s] = 1
+		t[s][pre] = -1
+	for suc in succs:
+		print "updated!"
+		t[suc][b]=-1
+		t[b][suc] =1
+	return t
 
 ##################################################################################################
 
@@ -273,15 +329,13 @@ cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
-grid[3][1] = -1
-grid[3][2] = -1
-grid[4][2] = 1
-grid[4][3] = 1 
 oldgrid = estep(e, trials, grid, data, ofreq, freqs)
+print "oldgrid"
+print oldgrid
 for j in range(10):
 	newgrid = estep(e, trials, oldgrid, data, ofreq, freqs)
 	oldgrid = newgrid
-	print newgrid
+	#print newgrid
 
 
 
