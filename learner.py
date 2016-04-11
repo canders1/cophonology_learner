@@ -107,8 +107,6 @@ def sampleGrammar(g):
 	grammar = []
 	n = len(g)
 	roots = [("ROOT",-1)]#start at root node, which has no incoming edges
-	print g.nodes()
-	print g.edges()
 	for i in range(n):#add every node once
 		random.shuffle(roots)#Shuffle nodes with no parents
 		c = roots.pop()#Choose one
@@ -199,7 +197,6 @@ def pickUpdate(grid):
 		return row, col
 	else:
 		trialcon = trys[random.randrange(0,len(trys))]#randomly pick a new constraint to add
-		print trialcon
 		row = trialcon[0]
 		col = trialcon[1]
 	return row, col
@@ -211,15 +208,17 @@ def estep(e, n, grid, data, ofreq, freqs):
 	Perform the e-step: attempt to add a new ranking and recalculate
 	"""
 	newgrid = grid
+	done = 1
 	print grid
 	print "here"
 	row, col = pickUpdate(grid)
 	if (row == ""):
-		return newgrid
+		done = 0
+		return newgrid, done
 		print "All done!"
 	bgrid, sgrid, test = bigsmall(row, col, grid)#generate grids with ranking added
 	if (test == True):
-		return newgrid
+		return newgrid, done
 		print "Fail"
 	else:
 		blist = genGrammars(n,bgrid)#get list of n grammars sampled from both grids
@@ -241,7 +240,7 @@ def estep(e, n, grid, data, ofreq, freqs):
 				newgrid = sgrid
 		print "new"
 		print newgrid
-		return newgrid
+		return newgrid, done
 
 #################################################################################################
 
@@ -251,8 +250,8 @@ def bigsmall(r,c,g):
 	"""
 	b_grid = copy.deepcopy(g)
 	s_grid = copy.deepcopy(g)
-	biggraph, testb = closure(r,c,b_grid)#Build graph with new ranking of r above c
-	smallgraph, tests = closure(c,r,s_grid)#Build graph with new ranking of c above r
+	testb = closure(r,c,b_grid)#Test whether ranking is possible
+	tests = closure(c,r,s_grid)
 	test = testb or tests
 	new_b_grid = tabClosure(r,c,b_grid)
 	new_s_grid = tabClosure(c,r,s_grid)
@@ -271,6 +270,8 @@ def closure(b,s,g):
 	fail = False
 	preds = graph.predecessors(bignode)
 	succs = graph.successors(smallnode)
+	preds.append(bignode)
+	succs.append(smallnode)
 	for i in preds:
 		for j in succs:
 			if (graph.has_edge(j,i)):#conflicting ranking
@@ -278,7 +279,7 @@ def closure(b,s,g):
 				break
 			else:
 				graph.add_edge(i,j)#transitive closure
-	return graph, fail
+	return fail
 
 #################################################################################################
 
@@ -286,7 +287,6 @@ def tabClosure(b,s,t):
 	preds = []
 	succs = []
 	for n in range(len(t)):
-		print t[b][n]
 		if (t[b][n] == 1):
 			preds.append(n)
 		if (t[s][n]==-1):
@@ -349,10 +349,15 @@ cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
-oldgrid = estep(e, trials, grid, data, ofreq, freqs)
-for j in range(50):
-	newgrid = estep(e, trials, oldgrid, data, ofreq, freqs)
-	oldgrid = newgrid
+oldgrid,done = estep(e, trials, grid, data, ofreq, freqs)
+for j in range(100):
+	print j
+	newgrid, done = estep(e, trials, oldgrid, data, ofreq, freqs)
+	if (done ==0):
+		print "done!"
+		break
+	else:
+		oldgrid = newgrid
 print oldgrid
 
 
