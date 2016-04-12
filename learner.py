@@ -184,63 +184,85 @@ def freqDict(n, gl, t, f):
 
 ################################################################################################
 
-def pickUpdate(grid):
+def pickUpdate(n,grid,data,ofreq,freqs):
 	row = ""
 	col = ""
 	trys = []
+	conlist = {}
+	done = 1
 	for i in range(len(grid)):
 		for j in range(len(grid)):
 			if (grid[i][j] == 0):
 				trys.append((i,j))
 	if(len(trys) == 0):
 		print "all done!"
-		return row, col
+		done = 0
+		return grid, done
 	else:
-		trialcon = trys[random.randrange(0,len(trys))]#randomly pick a new constraint to add
-		row = trialcon[0]
-		col = trialcon[1]
-	return row, col
+		random.shuffle(trys)
+		for i in range(len(trys)):
+			grid, f, m = estep(n,grid,data,ofreq,freqs,trys[i][0],trys[i][1])
+			if (f > 0):
+				print "not a can!"
+			else:
+				conlist[i] = (grid,m)
+	best = ([],0)
+	for entry in conlist:
+		if (conlist[entry][1] > best[1]):
+			best = (conlist[entry][0],conlist[entry][1])
+	print "best: " + str(best)
+	return best[0], done
 
 ##################################################################################################
 
-def estep(e, n, grid, data, ofreq, freqs):
+def estep(n, grid, data, ofreq, freqs,row,col):
 	"""
 	Perform the e-step: attempt to add a new ranking and recalculate
 	"""
+	print "estep"
 	newgrid = grid
-	done = 1
-	print grid
-	print "here"
-	row, col = pickUpdate(grid)
-	if (row == ""):
-		done = 0
-		return newgrid, done
-		print "All done!"
-	bgrid, sgrid, test = bigsmall(row, col, grid)#generate grids with ranking added
-	if (test == True):
-		return newgrid, done
-		print "Fail"
+	fail = 0
+	matches = 0
+	bgrid, sgrid, testb, tests = bigsmall(row, col, grid)#generate grids with ranking added
+	if ((tests + testb) > 1):
+		print "Both fail"
+		fail = 1
+		return newgrid, fail, 0
 	else:
-		blist = genGrammars(n,bgrid)#get list of n grammars sampled from both grids
-		slist = genGrammars(n,sgrid)
-		b_fd = freqDict(n, blist, data, freqs)#get frequency predictions from both grids
-		s_fd = freqDict(n,slist,data,freqs)
-		m_b = match(b_fd, ofreq, n)#get number of matches from both grids
-		m_s = match(s_fd,ofreq,n)
+		if(testb>0):
+			print "B fail"
+			m_b = 0
+			slist = genGrammars(n,sgrid)
+			s_fd = freqDict(n,slist,data,freqs)
+			m_s = match(s_fd,ofreq,n)
+		else:
+			if(tests>0):
+				m_s = 0
+				blist = genGrammars(n,bgrid)#get list of n grammars sampled
+				b_fd = freqDict(n, blist, data, freqs)#get frequency prediction
+				m_b = match(b_fd, ofreq, n)#get number of matches
+			else:
+
+				blist = genGrammars(n,bgrid)#get list of n grammars sampled from both grids
+				slist = genGrammars(n,sgrid)
+				b_fd = freqDict(n, blist, data, freqs)#get frequency predictions from both grids
+				s_fd = freqDict(n,slist,data,freqs)
+				m_b = match(b_fd, ofreq, n)#get number of matches from both grids
+				m_s = match(s_fd,ofreq,n)
+				print "big matches: " + str(m_b)
+				print "small matches: " + str(m_s)
 		#This is where you have to make a choice about what to do next
 		# Currently, I fix the ranking if the gap in matches is greater than e
-		print m_b
-		print m_s
-		if ((m_b-m_s) > e):
-			print "update!"
+
+		if (m_b>m_s):
 			newgrid = bgrid
+			matches = m_b
 		else:
-			if ((m_s-m_b) > e):
-				print "update!"
-				newgrid = sgrid
-		print "new"
+			newgrid = sgrid
+			matches = m_s
 		print newgrid
-		return newgrid, done
+		print "matches: " + str(matches)
+		return newgrid, fail, matches
 
 #################################################################################################
 
@@ -248,14 +270,11 @@ def bigsmall(r,c,g):
 	"""
 	Generate two new grids with fixed rankings for constraints r and c. 
 	"""
-	b_grid = copy.deepcopy(g)
-	s_grid = copy.deepcopy(g)
-	testb = closure(r,c,b_grid)#Test whether ranking is possible
-	tests = closure(c,r,s_grid)
-	test = testb or tests
-	new_b_grid = tabClosure(r,c,b_grid)
-	new_s_grid = tabClosure(c,r,s_grid)
-	return new_b_grid, new_s_grid, test
+	testb = closure(r,c,copy.deepcopy(g))#Test whether ranking is possible
+	tests = closure(c,r,copy.deepcopy(g))
+	new_b_grid = tabClosure(r,c,g)
+	new_s_grid = tabClosure(c,r,g)
+	return new_b_grid, new_s_grid, testb, tests
 
 ##################################################################################################
 
@@ -267,15 +286,15 @@ def closure(b,s,g):
 	graph = buildGraph(g)#build graph of partial order from the pairwise grid
 	bignode = (g[b][0],b)
 	smallnode = (g[s][0],s)
-	fail = False
+	fail = 0
 	preds = graph.predecessors(bignode)
 	succs = graph.successors(smallnode)
 	preds.append(bignode)
 	succs.append(smallnode)
 	for i in preds:
 		for j in succs:
-			if (graph.has_edge(j,i)):#conflicting ranking
-				fail = True
+			if (graph.has_edge(j,i) or (i[1]==j[1])):#conflicting ranking
+				fail = 1
 				break
 			else:
 				graph.add_edge(i,j)#transitive closure
@@ -284,24 +303,21 @@ def closure(b,s,g):
 #################################################################################################
 
 def tabClosure(b,s,t):
-	preds = []
-	succs = []
-	for n in range(len(t)):
-		if (t[b][n] == 1):
+	newt = copy.deepcopy(t)
+	preds = [b]
+	succs = [s]
+	for n in range(0,len(t)):
+		if (t[b][n] == -1):
 			preds.append(n)
-		if (t[s][n]==-1):
+		if (t[s][n]==1):
 			succs.append(n)
 	for pre in preds:
-		print "updated!"
-		t[pre][s] = 1
-		t[s][pre] = -1
+		newt[pre][s] = 1
+		newt[s][pre] = -1
 	for suc in succs:
-		print "updated!"
-		t[suc][b]=-1
-		t[b][suc] =1
-	t[b][s] = 1
-	t[s][b] = -1
-	return t
+		newt[suc][b]=-1
+		newt[b][suc] =1
+	return newt
 
 ##################################################################################################
 
@@ -337,6 +353,7 @@ f = open(sys.argv[2],'r')#read in test frequencies
 freq = open(sys.argv[3], 'r')#read in tableau frequencies
 trials = int(sys.argv[4])#number of samplings
 e = int(sys.argv[5])#size of gap in order to set a new ranking
+l = int(sys.argv[6])#number of learning iterations
 freqs = makeFreq(freq)#make a list of tableau frequencies
 d = []
 c = tabs.readline()
@@ -349,10 +366,11 @@ cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
-oldgrid,done = estep(e, trials, grid, data, ofreq, freqs)
-for j in range(100):
+oldgrid = grid
+for j in range(l):
 	print j
-	newgrid, done = estep(e, trials, oldgrid, data, ofreq, freqs)
+	newgrid, done = pickUpdate(trials, oldgrid, data, ofreq, freqs)
+	print newgrid
 	if (done ==0):
 		print "done!"
 		break
