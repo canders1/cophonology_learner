@@ -171,15 +171,19 @@ def freqDict(n, gl, t, f):
 	Creates a dictionary of frequencies for each output
 	"""
 	fd = {} #dictionary with output form keys and frequency values
+	print n
 	for i in range(n):
 		gram = gl[random.randrange(0, len(gl))]#randomly select a grammar
 		tab = t[f[random.randrange(0,len(f))]]#randomly select a tableau
 		w = winner(gram, tab)#find winner
+		print w
 		if (w[0] not in fd):#add/update entry in frequency dictionary
 			fd[w[0]] = 1
 		else:
 			old = fd[w[0]]
 			fd[w[0]] = old + 1
+	print "freqs"
+	print fd
 	return fd
 
 ################################################################################################
@@ -384,6 +388,10 @@ for j in range(l):
 	else:
 		oldgrid = newgrid
 print oldgrid
+glist = genGrammars(trials,oldgrid)#get list of n grammars sampled from both grids
+fpred = freqDict(trials, glist, data, freqs)#get frequency predictions from both grids
+m_b = match(fpred, ofreq, trials)#get number of matches from both grids
+print "Matches for final rankings: " + str(m_b)
 
 
 
