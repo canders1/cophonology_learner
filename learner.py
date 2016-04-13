@@ -171,19 +171,15 @@ def freqDict(n, gl, t, f):
 	Creates a dictionary of frequencies for each output
 	"""
 	fd = {} #dictionary with output form keys and frequency values
-	print n
 	for i in range(n):
 		gram = gl[random.randrange(0, len(gl))]#randomly select a grammar
 		tab = t[f[random.randrange(0,len(f))]]#randomly select a tableau
 		w = winner(gram, tab)#find winner
-		print w
 		if (w[0] not in fd):#add/update entry in frequency dictionary
 			fd[w[0]] = 1
 		else:
 			old = fd[w[0]]
 			fd[w[0]] = old + 1
-	print "freqs"
-	print fd
 	return fd
 
 ################################################################################################
@@ -204,7 +200,10 @@ def pickUpdate(n,grid,data,ofreq,freqs):
 	if(len(trys) == 0):#If all constraints are ranked, return
 		print "all done!"
 		done = 0
-		return grid, done
+		glist = genGrammars(n,grid)#get list of n grammars sampled from both grids
+		fpred = freqDict(n, glist, data, freqs)#get frequency predictions from both grids
+		m = match(fpred, ofreq, n)
+		return grid, done, m
 	else:
 		random.shuffle(trys)#pick a random constraint ranking to try to add
 		for i in range(len(trys)):
@@ -217,8 +216,7 @@ def pickUpdate(n,grid,data,ofreq,freqs):
 	for entry in conlist:#find constraint ranking with most matches
 		if (conlist[entry][1] > best[1]):
 			best = (conlist[entry][0],conlist[entry][1])
-	print "best: " + str(best)
-	return best[0], done
+	return best[0], done, best[1]
 
 ##################################################################################################
 
@@ -226,7 +224,6 @@ def estep(n, grid, data, ofreq, freqs,row,col):
 	"""
 	Perform the e-step: attempt to add a new ranking and recalculate
 	"""
-	print "estep"
 	newgrid = grid
 	fail = 0
 	matches = 0
@@ -256,8 +253,6 @@ def estep(n, grid, data, ofreq, freqs,row,col):
 				s_fd = freqDict(n,slist,data,freqs)
 				m_b = match(b_fd, ofreq, n)#get number of matches from both grids
 				m_s = match(s_fd,ofreq,n)
-				print "big matches: " + str(m_b)
-				print "small matches: " + str(m_s)
 		#This is where you have to make a choice about what to do next
 		# Currently, I fix the ranking if the gap in matches is greater than e
 
@@ -267,8 +262,6 @@ def estep(n, grid, data, ofreq, freqs,row,col):
 		else:
 			newgrid = sgrid
 			matches = m_s
-		print newgrid
-		print "matches: " + str(matches)
 		return newgrid, fail, matches
 
 #################################################################################################
@@ -380,8 +373,9 @@ ofreq = makefdict(f)#create a list of expected frequencies
 oldgrid = grid
 for j in range(l):
 	print j
-	newgrid, done = pickUpdate(trials, oldgrid, data, ofreq, freqs)
+	newgrid, done, m = pickUpdate(trials, oldgrid, data, ofreq, freqs)
 	print newgrid
+	print "Matches for final rankings: " + str(m) + " out of " + str(trials)
 	if (done ==0):
 		print "done!"
 		break
@@ -390,8 +384,8 @@ for j in range(l):
 print oldgrid
 glist = genGrammars(trials,oldgrid)#get list of n grammars sampled from both grids
 fpred = freqDict(trials, glist, data, freqs)#get frequency predictions from both grids
-m_b = match(fpred, ofreq, trials)#get number of matches from both grids
-print "Matches for final rankings: " + str(m_b)
+m = match(fpred, ofreq, trials)#get number of matches from both grids
+print "Matches for final rankings: " + str(m) + " out of " + str(trials)
 
 
 
