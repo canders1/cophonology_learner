@@ -185,29 +185,32 @@ def freqDict(n, gl, t, f):
 ################################################################################################
 
 def pickUpdate(n,grid,data,ofreq,freqs):
+	"""
+	Iterate through possible updates and return a grid updated with the best new constraint
+	"""
 	row = ""
 	col = ""
 	trys = []
 	conlist = {}
 	done = 1
-	for i in range(len(grid)):
+	for i in range(len(grid)):#Iterate through constraint rankings
 		for j in range(len(grid)):
-			if (grid[i][j] == 0):
+			if (grid[i][j] == 0):#If the constraints haven't been ranked yet
 				trys.append((i,j))
-	if(len(trys) == 0):
+	if(len(trys) == 0):#If all constraints are ranked, return
 		print "all done!"
 		done = 0
 		return grid, done
 	else:
-		random.shuffle(trys)
+		random.shuffle(trys)#pick a random constraint ranking to try to add
 		for i in range(len(trys)):
 			grid, f, m = estep(n,grid,data,ofreq,freqs,trys[i][0],trys[i][1])
-			if (f > 0):
+			if (f > 0):#if constraint ranking would result in inconsistency
 				print "not a can!"
 			else:
 				conlist[i] = (grid,m)
 	best = ([],0)
-	for entry in conlist:
+	for entry in conlist:#find constraint ranking with most matches
 		if (conlist[entry][1] > best[1]):
 			best = (conlist[entry][0],conlist[entry][1])
 	print "best: " + str(best)
@@ -303,6 +306,9 @@ def closure(b,s,g):
 #################################################################################################
 
 def tabClosure(b,s,t):
+	"""
+	Performs transitive closure on the tableau
+	"""
 	newt = copy.deepcopy(t)
 	preds = [b]
 	succs = [s]
@@ -311,19 +317,20 @@ def tabClosure(b,s,t):
 			preds.append(n)
 		if (t[s][n]==1):
 			succs.append(n)
-	for pre in preds:
-		newt[pre][s] = 1
-		newt[s][pre] = -1
-	for suc in succs:
-		newt[suc][b]=-1
-		newt[b][suc] =1
+	for pre in preds:#predecessors of the b constraint also dominate the s constraint
+		for suc in succs:#successors of the s constraint are also dominated by the b constraint
+			newt[pre][suc] = 1
+			newt[suc][pre] = -1
 	return newt
 
 ##################################################################################################
 
 def match(fd, ofd, n):
+	"""
+	Calculate matches
+	"""
 	matches = 0
-	scale = float(n)/float(ofd["TOTAl"])
+	scale = float(n)/float(ofd["TOTAl"])#Scale matches based on size of input
 	for key in fd:
 		exp = float(ofd[key])*scale
 		act = float(fd[key])
