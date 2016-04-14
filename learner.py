@@ -184,7 +184,7 @@ def freqDict(n, gl, t, f):
 
 ################################################################################################
 
-def pickUpdate(n,grid,data,ofreq,freqs):
+def pickUpdate(n,grid,data,ofreq,freqs,prevf):
 	"""
 	Iterate through possible updates and return a grid updated with the best new constraint
 	"""
@@ -192,31 +192,34 @@ def pickUpdate(n,grid,data,ofreq,freqs):
 	col = ""
 	trys = []
 	conlist = {}
-	done = 1
+	done = 0
 	for i in range(len(grid)):#Iterate through constraint rankings
 		for j in range(len(grid)):
 			if (grid[i][j] == 0):#If the constraints haven't been ranked yet
 				trys.append((i,j))
 	if(len(trys) == 0):#If all constraints are ranked, return
 		print "all done!"
-		done = 0
-		glist = genGrammars(n,grid)#get list of n grammars sampled from both grids
-		fpred = freqDict(n, glist, data, freqs)#get frequency predictions from both grids
-		m = match(fpred, ofreq, n)
-		return grid, done, m
+		done = 1
+		return grid, done, prevf
 	else:
 		random.shuffle(trys)#pick a random constraint ranking to try to add
+		oldgrid = grid
 		for i in range(len(trys)):
-			grid, f, m = estep(n,grid,data,ofreq,freqs,trys[i][0],trys[i][1])
+			newgrid, f, m = estep(n,oldgrid,data,ofreq,freqs,trys[i][0],trys[i][1])
 			if (f > 0):#if constraint ranking would result in inconsistency
 				print "not a can!"
 			else:
-				conlist[i] = (grid,m)
+				conlist[i] = (newgrid,m)
 	best = ([],0)
 	for entry in conlist:#find constraint ranking with most matches
 		if (conlist[entry][1] > best[1]):
 			best = (conlist[entry][0],conlist[entry][1])
-	return best[0], done, best[1]
+	if (prevf>=best[1]):
+		done = 1
+		print "no change is better"
+		return grid, done, prevf
+	else:
+		return best[0], done, best[1]
 
 ##################################################################################################
 
@@ -234,7 +237,6 @@ def estep(n, grid, data, ofreq, freqs,row,col):
 		return newgrid, fail, 0
 	else:
 		if(testb>0):
-			print "B fail"
 			m_b = 0
 			slist = genGrammars(n,sgrid)
 			s_fd = freqDict(n,slist,data,freqs)
@@ -371,16 +373,18 @@ grid = makeGrid(cons) #create an initialized grid of pairwise constraint ranking
 data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
 oldgrid = grid
+prevf =0
 for j in range(l):
 	print j
-	newgrid, done, m = pickUpdate(trials, oldgrid, data, ofreq, freqs)
+	newgrid, done, m = pickUpdate(trials, oldgrid, data, ofreq, freqs, prevf)
 	print newgrid
-	print "Matches for final rankings: " + str(m) + " out of " + str(trials)
-	if (done ==0):
+	print "Matches: " + str(m) + " out of " + str(trials)
+	if (done ==1):
 		print "done!"
 		break
 	else:
 		oldgrid = newgrid
+		prevf = m
 print oldgrid
 glist = genGrammars(trials,oldgrid)#get list of n grammars sampled from both grids
 fpred = freqDict(trials, glist, data, freqs)#get frequency predictions from both grids
