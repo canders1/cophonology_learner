@@ -171,15 +171,18 @@ def freqDict(n, gl, t, f):
 	Creates a dictionary of frequencies for each output
 	"""
 	fd = {} #dictionary with output form keys and frequency values
+	namefreq = {}
 	for i in range(n):
 		gram = gl[random.randrange(0, len(gl))]#randomly select a grammar
-		tab = t[f[random.randrange(0,len(f))]]#randomly select a tableau
+		name = f[random.randrange(0,len(f))]
+		tab = t[name]#randomly select a tableau
 		w = winner(gram, tab)#find winner
-		if (w[0] not in fd):#add/update entry in frequency dictionary
-			fd[w[0]] = 1
+		winp = (name, w[0])
+		if (winp not in fd):#add/update entry in frequency dictionary
+			fd[winp] = 1
 		else:
-			old = fd[w[0]]
-			fd[w[0]] = old + 1
+			old = fd[winp]
+			fd[winp] = old + 1
 	return fd
 
 ################################################################################################
@@ -225,6 +228,14 @@ def pickUpdate(n,grid,data,ofreq,freqs,prevf):
 
 ##################################################################################################
 
+def gen(n, grid, data, ofreq, freqs):
+	glist = genGrammars(n,grid)
+	fd = freqDict(n,glist,data,freqs)
+	m = match(fd,ofreq,n)
+	return m
+
+##################################################################################################
+
 def estep(n, grid, data, ofreq, freqs,row,col):
 	"""
 	Perform the e-step: attempt to add a new ranking and recalculate
@@ -240,23 +251,14 @@ def estep(n, grid, data, ofreq, freqs,row,col):
 	else:
 		if(testb>0):
 			m_b = 0
-			slist = genGrammars(n,sgrid)
-			s_fd = freqDict(n,slist,data,freqs)
-			m_s = match(s_fd,ofreq,n)
+			m_s = gen(n,sgrid,data,ofreq,freqs)
 		else:
 			if(tests>0):
 				m_s = 0
-				blist = genGrammars(n,bgrid)#get list of n grammars sampled
-				b_fd = freqDict(n, blist, data, freqs)#get frequency prediction
-				m_b = match(b_fd, ofreq, n)#get number of matches
+				m_b = gen(n,bgrid,data,ofreq,freqs)
 			else:
-
-				blist = genGrammars(n,bgrid)#get list of n grammars sampled from both grids
-				slist = genGrammars(n,sgrid)
-				b_fd = freqDict(n, blist, data, freqs)#get frequency predictions from both grids
-				s_fd = freqDict(n,slist,data,freqs)
-				m_b = match(b_fd, ofreq, n)#get number of matches from both grids
-				m_s = match(s_fd,ofreq,n)
+				m_s = gen(n,sgrid,data,ofreq,freqs)
+				m_b = gen(n,bgrid,data,ofreq,freqs)
 		#This is where you have to make a choice about what to do next
 		# Currently, I fix the ranking if the gap in matches is greater than e
 
@@ -331,9 +333,15 @@ def match(fd, ofd, n):
 	Calculate matches
 	"""
 	matches = 0
-	scale = float(n)/float(ofd["TOTAl"])#Scale matches based on size of input
+	tcount = {}
 	for key in fd:
-		exp = float(ofd[key])*scale
+		if (key not in tcount):
+			tcount[key[0]] = float(fd[key])
+		else:
+			newc = tcount[key[0]] + float(fd[key])
+			tcount[key[0]] = newc
+	for key in fd:
+		exp = float(ofd[key])/float(ofd[key[0]])*float(tcount[key[0]])#Scale matches based on size of input
 		act = float(fd[key])
 		m = min(act,exp)
 		matches = matches + m
@@ -346,12 +354,14 @@ def makefdict(f):
 	Creates a dictionary of output frequencies
 	"""
 	freqs = {}
-	total = 0
 	for i in f:
 		dpoint = i.split()
-		freqs[dpoint[0]] = dpoint[1]
-		total = total + int(dpoint[1])
-	freqs["TOTAl"] = total
+		freqs[(dpoint[0],dpoint[1])] = float(dpoint[2])
+		if (dpoint[0] not in freqs):
+			freqs[dpoint[0]] = float(dpoint[2])
+		else:
+			newf = freqs[dpoint[0]] + float(dpoint[2])
+			freqs[dpoint[0]] = newf
 	return freqs
 
 ###############################################################################################
@@ -388,9 +398,7 @@ for j in range(l):
 		oldgrid = newgrid
 		prevf = m
 print oldgrid
-glist = genGrammars(trials,oldgrid)#get list of n grammars sampled from both grids
-fpred = freqDict(trials, glist, data, freqs)#get frequency predictions from both grids
-m = match(fpred, ofreq, trials)#get number of matches from both grids
+m = gen(trials,oldgrid,data,ofreq,freqs)
 print "Matches for final rankings: " + str(m) + " out of " + str(trials)
 
 

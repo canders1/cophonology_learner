@@ -1,11 +1,11 @@
-west_end	7
-wes_end	3
-west	3
-wes	7
-west_side	3
-wes_side	7
-weset	0
-wesp	0
-weset_end	0
-wesp_end	0
-weset_side	0
+west_end	west_end	7
+west_end	wes_end	3
+west_end	weset_end	0
+west_end	wesp_end	0
+west	west	3
+west	wes	7
+west	weset	0
+west	wesp	0
+west_side	west_side	3
+west_side	wes_side	7
+west_side	weset_side	0
