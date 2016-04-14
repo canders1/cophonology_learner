@@ -1,3 +1,3 @@
-west_end	100
-west	100
-west_side	100
+west_end	1
+west	1
+west_side	1
