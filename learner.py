@@ -214,12 +214,14 @@ def pickUpdate(n,grid,data,ofreq,freqs,prevf):
 	for entry in conlist:#find constraint ranking with most matches
 		if (conlist[entry][1] > best[1]):
 			best = (conlist[entry][0],conlist[entry][1])
+	"""
 	if (prevf>=best[1]):
 		done = 1
 		print "no change is better"
 		return grid, done, prevf
 	else:
-		return best[0], done, best[1]
+	"""
+	return best[0], done, best[1]
 
 ##################################################################################################
 
