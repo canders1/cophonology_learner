@@ -228,14 +228,14 @@ def pickUpdate(n,grid,data,ofreq,freqs,prevf):
 
 ##################################################################################################
 
-def consistentUList(n,grid,data):
+def consistentUList(n,grid,data,ofreq):
 	"""
 	Iterate through possible updates and return a grid updated with the best new constraint
 	"""
 	row = ""
 	col = ""
 	trys = []
-	conlist = {}
+	conlist = []
 	done = 0
 	for i in range(len(grid)):#Iterate through constraint rankings
 		for j in range(len(grid)):
@@ -244,16 +244,22 @@ def consistentUList(n,grid,data):
 	if(len(trys) == 0):#If all constraints are ranked, return
 		print "all done!"
 		done = 1
-		return grid, done, prevf
+		return conlist
 	else:
 		random.shuffle(trys)#pick a random constraint ranking to try to add
 		oldgrid = grid
 		for i in range(len(trys)):
-			grid, sgrid, testb, tests = bigsmall(row, col, grid)#generate grids with ranking added
-			if (sgrid==0):
+			bgrid, sgrid, testb, tests = bigsmall(trys[i][0],trys[i][1], grid)#generate grids with ranking added
+			if (tests==0):
 				conlist.append(sgrid)
-			if (bgrid==0):
+			if (testb==0):
 				conlist.append(bgrid)
+	for c in conlist:
+		TO = genGrammars(n, c)
+		consistency = consistent(TO,data,ofreq)
+		print consistency
+		if(consistency>1):
+			conlist.remove(c)
 	return conlist
 
 ##################################################################################################
@@ -387,12 +393,19 @@ def consistent(TO,tableaux,output):
 	If the partial order is consistent with the output, returns 1; else returns 0
 	"""
 	consistent = 0
-	for (n,w) in output.keys:
+	print output.keys()
+	for k in output.keys():
+		if len(k) > 1:
+			n = k[0]
+			w = k[1]
 		if (output[(n,w)] > 0.0):
 			tableau = tableaux[n]
 			found = 0
 			for o in TO:
-				if(winner(o,tableau)==w):
+				picked = winner(o,tableau)[0]
+				print picked
+				print w
+				if(picked==w):
 					print "consistent found" + str((n,w)) + "found!"
 					found = 1
 					break
@@ -441,6 +454,9 @@ ofreq = makefdict(f)#create a list of expected frequencies
 print data
 print "____"
 print ofreq
+clist = consistentUList(trials, grid, data, ofreq)
+print "____"
+print clist
 """
 oldgrid = grid
 prevf =0
