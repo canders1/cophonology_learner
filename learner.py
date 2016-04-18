@@ -228,6 +228,36 @@ def pickUpdate(n,grid,data,ofreq,freqs,prevf):
 
 ##################################################################################################
 
+def consistentUList(n,grid,data):
+	"""
+	Iterate through possible updates and return a grid updated with the best new constraint
+	"""
+	row = ""
+	col = ""
+	trys = []
+	conlist = {}
+	done = 0
+	for i in range(len(grid)):#Iterate through constraint rankings
+		for j in range(len(grid)):
+			if (grid[i][j] == 0):#If the constraints haven't been ranked yet
+				trys.append((i,j))
+	if(len(trys) == 0):#If all constraints are ranked, return
+		print "all done!"
+		done = 1
+		return grid, done, prevf
+	else:
+		random.shuffle(trys)#pick a random constraint ranking to try to add
+		oldgrid = grid
+		for i in range(len(trys)):
+			grid, sgrid, testb, tests = bigsmall(row, col, grid)#generate grids with ranking added
+			if (sgrid==0):
+				conlist.append(sgrid)
+			if (bgrid==0):
+				conlist.append(bgrid)
+	return conlist
+
+##################################################################################################
+
 def gen(n, grid, data, ofreq, freqs):
 	glist = genGrammars(n,grid)
 	fd = freqDict(n,glist,data,freqs)
