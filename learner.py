@@ -246,7 +246,7 @@ def consistentUList(n,grid,data,ofreq):
 	if(len(trys) == 0):#If all constraints are ranked, return
 		print "all done!"
 		done = 1
-		return conlist
+		return conlist, done
 	else:
 		random.shuffle(trys)#pick a random constraint ranking to try to add
 		oldgrid = grid
@@ -256,33 +256,46 @@ def consistentUList(n,grid,data,ofreq):
 				conlist.append(sgrid)#add to consistent ranking list
 			if (testb==0):#dominating ranking passes closure
 				conlist.append(bgrid)#add to consistent ranking list
+	print "start len: " + str(len(conlist))
+	winlist = []
 	for c in conlist:
 		TO = genGrammars(n, c)#sample total orders from partial order
-		consistency = consistent(TO,data,ofreq)#check consistency against output
-		if(consistency>1):
-			conlist.remove(c)#delete partial orders that are not consistent with output
-	return conlist
+		print "partial order is: "
+		print c
+		inconsist = consistent(TO,data,ofreq)#check consistency against output
+		if(int(inconsist)==0):
+			winlist.append(c)#add partial order that if consistent with output
+		else:
+			print "c removed!"
+	print "end len: " + str(len(winlist))
+	print winlist
+	return winlist, done
 
 ##################################################################################################
 
 def learn(grid,n,data,ofreqs,freqs,prevs):
 	newg = grid
 	done = 0
-	clist = consistentUList(n,grid,data,ofreqs)
-	if(clist.isEmpty()):
-		if(prevs.isEmpty()):
-			done = 1
-			return newg,prevs,done
-		else:
-			random.shuffle(prevs)
-			newg = prevs[0]
-			prevs.remove(newg)
-			return newg,prevs,done
-	else:
-		random.shuffle(clist)
-		prevs = clist[0:4]
-		newg = clist[5]
+	clist,d = consistentUList(n,grid,data,ofreqs)
+	if(d==1):
+		done = 1
 		return newg,prevs,done
+	else:
+		if(len(clist)==0):
+			if(len(prevs)==0):
+				done = 1
+				return newg,prevs,done
+			else:
+				print "backtrack!"
+				random.shuffle(prevs)
+				newg = prevs[0]
+				prevs.remove(newg)
+				return newg,prevs,done
+		else:
+			random.shuffle(clist)
+			prevs = clist[-5:-2]
+			newg = clist[-1]
+			return newg,prevs,done
 
 ##################################################################################################
 
@@ -414,24 +427,33 @@ def consistent(TO,tableaux,output):
 	that predicts that winner.
 	If the partial order is consistent with the output, returns 1; else returns 0
 	"""
-	consistent = 0
+	inconsistent = 0
 	for k in output.keys():
+		found = 0
 		if (isinstance(k, tuple)):
 			n = k[0]
 			w = k[1]
 			if (output[k] > 0.0):
+				print "key is: "
+				print k
+				print "tableau is:"
 				tableau = tableaux[n]
-				found = 0
+				print tableau
 				for o in TO:
+					print "o is: "
+					print o
 					picked = winner(o,tableau)[0]
+					print "winner is: "
+					print picked
 					if(picked==w):
-						#print "consistent found" + str((n,w)) + "found!"
+						print "consistent for " + str((n,w)) + " found!"
 						found = 1
 						break
 				if(found==0):
-					return consistent
-	consistent = 1
-	return consistent
+					print "never found a consistent one!"
+					inconsistent = 1
+					return inconsistent
+	return inconsistent
 
 ##################################################################################################
 
@@ -470,19 +492,19 @@ cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
-print data
-print "____"
-print ofreq
-clist = consistentUList(trials, grid, data, ofreq)
-print "____"
-print clist
-print len(clist)
 oldgrid = grid
+prevs = []
 for i in range(l):
-	newgrid,plist,d = learn(oldgrid,n,data,ofreqs,freqs,prevs)
+	print "Gen " + str(i)
+	newgrid,plist,d = learn(oldgrid,n,data,ofreq,freqs,prevs)
+	print "newgrid:"
+	print newgrid
+	print "len(plist): " + str(len(plist))
+	print d
 	oldgrid = newgrid
 	prevs = plist
 	if(d==1):
+		"Done!"
 		break
 m = gen(n,oldgrid,data,ofreq,freqs)
 print m
