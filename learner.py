@@ -185,47 +185,6 @@ def freqDict(n, gl, t, f):
 			fd[winp] = old + 1
 	return fd
 
-################################################################################################
-
-def pickUpdate(n,grid,data,ofreq,freqs,prevf):
-	"""
-	Iterate through possible updates and return a grid updated with the best new constraint
-	"""
-	row = ""
-	col = ""
-	trys = []
-	conlist = {}
-	done = 0
-	for i in range(len(grid)):#Iterate through constraint rankings
-		for j in range(len(grid)):
-			if (grid[i][j] == 0):#If the constraints haven't been ranked yet
-				trys.append((i,j))
-	if(len(trys) == 0):#If all constraints are ranked, return
-		print "all done!"
-		done = 1
-		return grid, done, prevf
-	else:
-		random.shuffle(trys)#pick a random constraint ranking to try to add
-		oldgrid = grid
-		for i in range(len(trys)):
-			newgrid, f, m = estep(n,oldgrid,data,ofreq,freqs,trys[i][0],trys[i][1])
-			if (f > 0):#if constraint ranking would result in inconsistency
-				print "not a can!"
-			else:
-				conlist[i] = (newgrid,m)
-	best = ([],0)
-	for entry in conlist:#find constraint ranking with most matches
-		if (conlist[entry][1] > best[1]):
-			best = (conlist[entry][0],conlist[entry][1])
-	"""
-	if (prevf>=best[1]):
-		done = 1
-		print "no change is better"
-		return grid, done, prevf
-	else:
-	"""
-	return best[0], done, best[1]
-
 ##################################################################################################
 
 def consistentUList(n,grid,data,ofreq):
@@ -256,7 +215,6 @@ def consistentUList(n,grid,data,ofreq):
 				conlist.append(sgrid)#add to consistent ranking list
 			if (testb==0):#dominating ranking passes closure
 				conlist.append(bgrid)#add to consistent ranking list
-	print "start len: " + str(len(conlist))
 	winlist = []
 	for c in conlist:
 		TO = genGrammars(n, c)#sample total orders from partial order
@@ -268,18 +226,24 @@ def consistentUList(n,grid,data,ofreq):
 ##################################################################################################
 
 def learn(grid,n,data,ofreqs,freqs,prevs):
+	"""
+	One generation of learning
+	Calls consistentUList to generate a list of next rankings consistent with the output
+	Figures out whether learning is done, needs to backtrack, or can add a new ranking
+	Updates the backtrack list (prevs)
+	"""
 	newg = grid
 	done = 0
 	clist,d = consistentUList(n,grid,data,ofreqs)
-	if(d==1):
+	if(d==1):#If there are no unranked constraints left, quit
 		done = 1
 		return newg,prevs,done
 	else:
-		if(len(clist)==0):
-			if(len(prevs)==0):
+		if(len(clist)==0):#If no consistent next rankings exist,
+			if(len(prevs)==0):#And no backtrack possibilities exist, quit
 				done = 1
 				return newg,prevs,done
-			else:
+			else:#If there is a backtrack option, pick a random one and return
 				print "backtrack!"
 				random.shuffle(prevs)
 				newg = prevs[0]
@@ -287,8 +251,8 @@ def learn(grid,n,data,ofreqs,freqs,prevs):
 				return newg,prevs,done
 		else:
 			random.shuffle(clist)
-			prevs = clist[-5:-2]
-			newg = clist[-1]
+			prevs = clist[-5:-2]#update backtrack possibilities
+			newg = clist[-1]#add new constraint ranking
 			return newg,prevs,done
 
 ##################################################################################################
@@ -298,42 +262,6 @@ def gen(n, grid, data, ofreq, freqs):
 	fd = freqDict(n,glist,data,freqs)
 	m = match(fd,ofreq,n)
 	return m
-
-##################################################################################################
-
-def estep(n, grid, data, ofreq, freqs,row,col):
-	"""
-	Perform the e-step: attempt to add a new ranking and recalculate
-	"""
-	newgrid = grid
-	fail = 0
-	matches = 0
-	bgrid, sgrid, testb, tests = bigsmall(row, col, grid)#generate grids with ranking added
-	if ((tests + testb) > 1):
-		print "Both fail"
-		fail = 1
-		return newgrid, fail, 0
-	else:
-		if(testb>0):
-			m_b = 0
-			m_s = gen(n,sgrid,data,ofreq,freqs)
-		else:
-			if(tests>0):
-				m_s = 0
-				m_b = gen(n,bgrid,data,ofreq,freqs)
-			else:
-				m_s = gen(n,sgrid,data,ofreq,freqs)
-				m_b = gen(n,bgrid,data,ofreq,freqs)
-		#This is where you have to make a choice about what to do next
-		# Currently, I fix the ranking if the gap in matches is greater than e
-
-		if (m_b>m_s):
-			newgrid = bgrid
-			matches = m_b
-		else:
-			newgrid = sgrid
-			matches = m_s
-		return newgrid, fail, matches
 
 #################################################################################################
 
@@ -478,20 +406,28 @@ data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
 oldgrid = grid
 prevs = []
-for i in range(l):
+for i in range(l):#for l number of learning iterations
+	print "_________________________________________________"
 	print "Gen " + str(i)
-	newgrid,plist,d = learn(oldgrid,n,data,ofreq,freqs,prevs)
-	print "newgrid:"
+	newgrid,plist,d = learn(oldgrid,n,data,ofreq,freqs,prevs)#update with a consistent constraint ranking
+	print "Updated grammar:"
 	print newgrid
-	print "len(plist): " + str(len(plist))
-	print d
 	oldgrid = newgrid
 	prevs = plist
 	if(d==1):
 		"Done!"
 		break
-m = gen(n,oldgrid,data,ofreq,freqs)
-print m
+print "_________________________________________________"
+print "Final grammar: "
 print oldgrid
+m = gen(trials,oldgrid,data,ofreq,freqs)
+glist = genGrammars(l,oldgrid)
+print "Total orders generated by grammar:"
+grdict = {}
+for g in glist:
+	if (str(g) not in grdict):
+		print g
+		grdict[str(g)] = "yes"
+#print "Matches for final rankings: " + str(m) + " out of " + str(trials)
 
 
