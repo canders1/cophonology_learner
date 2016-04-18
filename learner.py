@@ -395,22 +395,20 @@ def consistent(TO,tableaux,output):
 	consistent = 0
 	print output.keys()
 	for k in output.keys():
-		if len(k) > 1:
+		if (isinstance(k, tuple)):
 			n = k[0]
 			w = k[1]
-		if (output[(n,w)] > 0.0):
-			tableau = tableaux[n]
-			found = 0
-			for o in TO:
-				picked = winner(o,tableau)[0]
-				print picked
-				print w
-				if(picked==w):
-					print "consistent found" + str((n,w)) + "found!"
-					found = 1
-					break
-			if(found==0):
-				return consistent
+			if (output[k] > 0.0):
+				tableau = tableaux[n]
+				found = 0
+				for o in TO:
+					picked = winner(o,tableau)[0]
+					if(picked==w):
+						#print "consistent found" + str((n,w)) + "found!"
+						found = 1
+						break
+				if(found==0):
+					return consistent
 	consistent = 1
 	return consistent
 
