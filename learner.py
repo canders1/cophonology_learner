@@ -260,15 +260,9 @@ def consistentUList(n,grid,data,ofreq):
 	winlist = []
 	for c in conlist:
 		TO = genGrammars(n, c)#sample total orders from partial order
-		print "partial order is: "
-		print c
 		inconsist = consistent(TO,data,ofreq)#check consistency against output
 		if(int(inconsist)==0):
 			winlist.append(c)#add partial order that if consistent with output
-		else:
-			print "c removed!"
-	print "end len: " + str(len(winlist))
-	print winlist
 	return winlist, done
 
 ##################################################################################################
@@ -434,23 +428,13 @@ def consistent(TO,tableaux,output):
 			n = k[0]
 			w = k[1]
 			if (output[k] > 0.0):
-				print "key is: "
-				print k
-				print "tableau is:"
 				tableau = tableaux[n]
-				print tableau
 				for o in TO:
-					print "o is: "
-					print o
 					picked = winner(o,tableau)[0]
-					print "winner is: "
-					print picked
 					if(picked==w):
-						print "consistent for " + str((n,w)) + " found!"
 						found = 1
 						break
 				if(found==0):
-					print "never found a consistent one!"
 					inconsistent = 1
 					return inconsistent
 	return inconsistent
