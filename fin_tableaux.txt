@@ -47,7 +47,7 @@ a'.jat.te.li.jo`i.den	1	2	0	0	1	0	0	0	1	1	2
 a'.jat.te.li.jo.jen	1	2	0	0	0	0	0	1	0	2	4
 televisio
 te'.le.vi.si.o`i.den	1	1	0	1	0	0	0	0	1	3	2
-te'.le.vi.si.o.jen	1	1	0	0	0	0	1	0	0	4	4! 0
+te'.le.vi.si.o.jen	1	1	0	0	0	0	1	0	0	4	4
 Aleksanteri
 A'.lek.sa`n.te.ri.en	1	2	0	0	0	1	0	0	1	1	2
 A'.lek.sa`n.te.re`i.den	1	2	1	0	0	0	0	0	2	0	0
