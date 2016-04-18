@@ -230,7 +230,9 @@ def pickUpdate(n,grid,data,ofreq,freqs,prevf):
 
 def consistentUList(n,grid,data,ofreq):
 	"""
-	Iterate through possible updates and return a grid updated with the best new constraint
+	Iterate through possible updates, calls bigsmall to apply transitive closure, check if they are 
+	consistent (contain a possible total order for each tableau that predicts every winner in the output), 
+	and return a list of consistent updates
 	"""
 	row = ""
 	col = ""
@@ -249,18 +251,38 @@ def consistentUList(n,grid,data,ofreq):
 		random.shuffle(trys)#pick a random constraint ranking to try to add
 		oldgrid = grid
 		for i in range(len(trys)):
-			bgrid, sgrid, testb, tests = bigsmall(trys[i][0],trys[i][1], grid)#generate grids with ranking added
-			if (tests==0):
-				conlist.append(sgrid)
-			if (testb==0):
-				conlist.append(bgrid)
+			bgrid, sgrid, testb, tests = bigsmall(trys[i][0],trys[i][1], grid)#generate grids with ranking added; apply transitive closure
+			if (tests==0):#dominated ranking passes closure test
+				conlist.append(sgrid)#add to consistent ranking list
+			if (testb==0):#dominating ranking passes closure
+				conlist.append(bgrid)#add to consistent ranking list
 	for c in conlist:
-		TO = genGrammars(n, c)
-		consistency = consistent(TO,data,ofreq)
-		print consistency
+		TO = genGrammars(n, c)#sample total orders from partial order
+		consistency = consistent(TO,data,ofreq)#check consistency against output
 		if(consistency>1):
-			conlist.remove(c)
+			conlist.remove(c)#delete partial orders that are not consistent with output
 	return conlist
+
+##################################################################################################
+
+def learn(grid,n,data,ofreqs,freqs,prevs):
+	newg = grid
+	done = 0
+	clist = consistentUList(n,grid,data,ofreqs)
+	if(clist.isEmpty()):
+		if(prevs.isEmpty()):
+			done = 1
+			return newg,prevs,done
+		else:
+			random.shuffle(prevs)
+			newg = prevs[0]
+			prevs.remove(newg)
+			return newg,prevs,done
+	else:
+		random.shuffle(clist)
+		prevs = clist[0:4]
+		newg = clist[5]
+		return newg,prevs,done
 
 ##################################################################################################
 
@@ -393,7 +415,6 @@ def consistent(TO,tableaux,output):
 	If the partial order is consistent with the output, returns 1; else returns 0
 	"""
 	consistent = 0
-	print output.keys()
 	for k in output.keys():
 		if (isinstance(k, tuple)):
 			n = k[0]
@@ -455,24 +476,16 @@ print ofreq
 clist = consistentUList(trials, grid, data, ofreq)
 print "____"
 print clist
-"""
+print len(clist)
 oldgrid = grid
-prevf =0
-for j in range(l):
-	print j
-	newgrid, done, m = pickUpdate(trials, oldgrid, data, ofreq, freqs, prevf)
-	print newgrid
-	print "Matches: " + str(m) + " out of " + str(trials)
-	if (done ==1):
-		print "done!"
+for i in range(l):
+	newgrid,plist,d = learn(oldgrid,n,data,ofreqs,freqs,prevs)
+	oldgrid = newgrid
+	prevs = plist
+	if(d==1):
 		break
-	else:
-		oldgrid = newgrid
-		prevf = m
+m = gen(n,oldgrid,data,ofreq,freqs)
+print m
 print oldgrid
-m = gen(trials,oldgrid,data,ofreq,freqs)
-print "Matches for final rankings: " + str(m) + " out of " + str(trials)
-"""
-
 
 
