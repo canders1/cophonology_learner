@@ -349,6 +349,30 @@ def match(fd, ofd, n):
 
 ##################################################################################################
 
+def consistent(TO,tableaux,output):
+	"""
+	For a given partial order (represented as a list of total orders),
+	checks that for each tableau/winner pair in the output, there exists a partial order
+	that predicts that winner.
+	If the partial order is consistent with the output, returns 1; else returns 0
+	"""
+	consistent = 0
+	for (n,w) in output.keys:
+		if (output[(n,w)] > 0.0):
+			tableau = tableaux[n]
+			found = 0
+			for o in TO:
+				if(winner(o,tableau)==w):
+					print "consistent found" + str((n,w)) + "found!"
+					found = 1
+					break
+			if(found==0):
+				return consistent
+	consistent = 1
+	return consistent
+
+##################################################################################################
+
 def makefdict(f):
 	"""
 	Creates a dictionary of output frequencies
@@ -384,6 +408,10 @@ cons = c.split()#create a list of constraints
 grid = makeGrid(cons) #create an initialized grid of pairwise constraint rankings
 data = makeData(d, n) #create a dictionary of data
 ofreq = makefdict(f)#create a list of expected frequencies
+print data
+print "____"
+print ofreq
+"""
 oldgrid = grid
 prevf =0
 for j in range(l):
@@ -400,8 +428,7 @@ for j in range(l):
 print oldgrid
 m = gen(trials,oldgrid,data,ofreq,freqs)
 print "Matches for final rankings: " + str(m) + " out of " + str(trials)
-
-
+"""
 
 
 
