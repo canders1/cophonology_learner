@@ -1,7 +1,7 @@
 import learner
 
 gdict = {}
-for i in range(1000):
+for i in range(250):
 	g, l = learner.main()
 	if (str(g) not in gdict):
 		gdict[str(g)] = 1
