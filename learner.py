@@ -24,13 +24,13 @@ def makeGrid(c):
 	grid = []
 	c.insert(0,"X")
 	grid.append(c)
-	for n in range(1,len(c)):
+	for n in range(1,len(c)):#don't change values in first row/column slot, they are constraint names
 		row = [c[n]]
 		for m in range(1,len(c)):
 			if m==n:
-				row.append(2)
+				row.append(2)#initialize self-rankings to 2
 			else:
-				row.append(0)
+				row.append(0)#initialize all other rankings to 0
 		grid.append(row)
 	return grid
 
@@ -57,19 +57,6 @@ def makeData(d,n):
 	return data
 
 ############################################################################################################
-
-def makeFreq(f):
-	"""
-	Create a list representing form frequencies
-	"""
-	freqs = []
-	for i in f:
-		dpoint = i.split()
-		for n in range(int(dpoint[1])):
-			freqs.append(dpoint[0])
-	return freqs
-
-##################################################################################################
 
 def buildGraph(g):
 	"""
@@ -164,29 +151,6 @@ def genGrammars(n, grid):
 
 ##################################################################################################
 
-def freqDict(n, gl, t, f):
-	"""
-	Finds the frequencies of output forms over n trials
-	Randomly selects a grammar and (according to frequency) a tableau, then calls winner()
-	Creates a dictionary of frequencies for each output
-	"""
-	fd = {} #dictionary with output form keys and frequency values
-	namefreq = {}
-	for i in range(n):
-		gram = gl[random.randrange(0, len(gl))]#randomly select a grammar
-		name = f[random.randrange(0,len(f))]
-		tab = t[name]#randomly select a tableau
-		w = winner(gram, tab)#find winner
-		winp = (name, w[0])
-		if (winp not in fd):#add/update entry in frequency dictionary
-			fd[winp] = 1
-		else:
-			old = fd[winp]
-			fd[winp] = old + 1
-	return fd
-
-##################################################################################################
-
 def consistentUList(n,grid,data,ofreq):
 	"""
 	Iterate through possible updates, calls bigsmall to apply transitive closure, check if they are 
@@ -255,14 +219,6 @@ def learn(grid,n,data,ofreqs,prevs):
 			newg = clist[-1]#add new constraint ranking
 			return newg,prevs,done
 
-##################################################################################################
-
-def gen(n, grid, data, ofreq, freqs):
-	glist = genGrammars(n,grid)
-	fd = freqDict(n,glist,data,freqs)
-	m = match(fd,ofreq,n)
-	return m
-
 #################################################################################################
 
 def bigsmall(r,c,g):
@@ -271,8 +227,8 @@ def bigsmall(r,c,g):
 	"""
 	testb = closure(r,c,copy.deepcopy(g))#Test whether ranking is possible
 	tests = closure(c,r,copy.deepcopy(g))
-	new_b_grid = tabClosure(r,c,g)
-	new_s_grid = tabClosure(c,r,g)
+	new_b_grid = tabClosure(r,c,g)#rank row over column
+	new_s_grid = tabClosure(c,r,g)#rank column over row
 	return new_b_grid, new_s_grid, testb, tests
 
 ##################################################################################################
@@ -286,8 +242,8 @@ def closure(b,s,g):
 	bignode = (g[b][0],b)
 	smallnode = (g[s][0],s)
 	fail = 0
-	preds = graph.predecessors(bignode)
-	succs = graph.successors(smallnode)
+	preds = graph.predecessors(bignode)#get constraints ranked above dominating node
+	succs = graph.successors(smallnode)#get constraints ranked below dominated node
 	preds.append(bignode)
 	succs.append(smallnode)
 	for i in preds:
@@ -310,35 +266,14 @@ def tabClosure(b,s,t):
 	succs = [s]
 	for n in range(0,len(t)):
 		if (t[b][n] == -1):
-			preds.append(n)
-		if (t[s][n]==1):
+			preds.append(n)#get predecessors of the dominating constraint
+		if (t[s][n]==1):#get successors of the dominated constraint 
 			succs.append(n)
 	for pre in preds:#predecessors of the b constraint also dominate the s constraint
 		for suc in succs:#successors of the s constraint are also dominated by the b constraint
 			newt[pre][suc] = 1
 			newt[suc][pre] = -1
 	return newt
-
-##################################################################################################
-
-def match(fd, ofd, n):
-	"""
-	Calculate matches
-	"""
-	matches = 0
-	tcount = {}
-	for key in fd:
-		if (key not in tcount):
-			tcount[key[0]] = float(fd[key])
-		else:
-			newc = tcount[key[0]] + float(fd[key])
-			tcount[key[0]] = newc
-	for key in fd:
-		exp = float(ofd[key])/float(ofd[key[0]])*float(tcount[key[0]])#Scale matches based on size of input
-		act = float(fd[key])
-		m = min(act,exp)
-		matches = matches + m
-	return matches
 
 ##################################################################################################
 
@@ -352,17 +287,17 @@ def consistent(TO,tableaux,output):
 	inconsistent = 0
 	for k in output.keys():
 		found = 0
-		if (isinstance(k, tuple)):
-			n = k[0]
-			w = k[1]
-			if (output[k] > 0.0):
-				tableau = tableaux[n]
-				for o in TO:
+		if (isinstance(k, tuple)):#for each input-winner pair (ignore tableau count items):
+			n = k[0]#name of tableau
+			w = k[1]#winner
+			if (output[k] > 0.0):#if winner is attested in the training data:
+				tableau = tableaux[n]#look up tableau
+				for o in TO:#search for a total order that picks that winner
 					picked = winner(o,tableau)[0]
 					if(picked==w):
 						found = 1
 						break
-				if(found==0):
+				if(found==0):#no total order predicting the winner is found, so constraint ranking is inconsistent
 					inconsistent = 1
 					return inconsistent
 	return inconsistent
@@ -385,20 +320,17 @@ def makefdict(f):
 	return freqs
 
 ###############################################################################################
-def main():
 
+def main():
 	tabs = open(sys.argv[1], 'r')#read in constraints and tableaux
 	f = open(sys.argv[2],'r')#read in test frequencies
-	#freq = open(sys.argv[3], 'r')#read in tableau frequencies
-	trials = int(sys.argv[4])#number of samplings
-	e = int(sys.argv[5])#size of gap in order to set a new ranking
-	l = int(sys.argv[6])#number of learning iterations
-	#freqs = makeFreq(freq)#make a list of tableau frequencies
-	d = []
-	c = tabs.readline()
+	trials = int(sys.argv[3])#number of samplings
+	l = int(sys.argv[4])#number of learning iterations
+	c = tabs.readline()#constraints
 	n = tabs.readline()
 	n = n.split()
 	n = int(n[0]) #number of tableaux
+	d = []
 	for line in tabs:
 		d.append(line.strip()) #create a list of data points
 	cons = c.split()#create a list of constraints
@@ -408,26 +340,16 @@ def main():
 	oldgrid = grid
 	prevs = []
 	for i in range(l):#for l number of learning iterations
-		#print "_________________________________________________"
-		#print "Gen " + str(i)
 		newgrid,plist,d = learn(oldgrid,n,data,ofreq,prevs)#update with a consistent constraint ranking
-		#print "Updated grammar:"
-		#print newgrid
 		oldgrid = newgrid
-		prevs = plist
-		if(d==1):
+		prevs = plist#backtrack list
+		if(d==1):#all done, no more possible rankings to add
 			break
-	#print "_________________________________________________"
-	#print "Final grammar: "
-	#print oldgrid
-	#m = gen(trials,oldgrid,data,ofreq,freqs)
 	glist = genGrammars(l,oldgrid)
-	#print "Total orders generated by grammar:"
 	grdict = {}
-	for g in glist:
+	for g in glist:#compile a list of total orders generated by the partial order
 		if (str(g) not in grdict):
 			grdict[str(g)] = "yes"
 	return oldgrid, grdict.keys()
-#print "Matches for final rankings: " + str(m) + " out of " + str(trials)
 
 
