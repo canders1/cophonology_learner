@@ -2,17 +2,29 @@ This is a learner for cophonological approaches to variation. It adapts the Expe
 
 Run as follows:
 
-python learner.py tableaus input frequencies n m e
+python learner.py tableaux train n e
 
-where tableaus contains constraints and tableaus; input contains the input forms;
-	  frequencies contains the frequency of each output; n specifies the sample size;
-	  m specifies the threshold for adding a new constraint; and
-	  e specifies the number of learning attempts
+where:
+	tableaux contains constraints and tableaus; 
+	train contains the training input-winner pairs;
+	n specifies the sampling size;
+	e specifies the number of learning attempts
 
 Example:
 
-python learner.py td_tableaux.txt aave.txt td_freq.txt 1000 1 100
+python learner.py td_tableaux.txt aave.txt 100000 100
 
+import.py is a program that will run X number of trials of the learner, where X is a command-line argument given by the user.
+
+It can be run as follows:
+
+python import.py tableaux train n e m > tdults.txt
+
+where e specifies the number of runs for the learner and the other command-line arguments are as explained above.
+
+Example:
+
+python import.py td_tableaux.txt aave.txt 100000 100 250
 
 Gaja Jarosz. 2015. Expectation Driven Learning of Phonology. 
 http://people.umass.edu/jarosz/edl_submitted.pdf
